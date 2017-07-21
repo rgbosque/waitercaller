@@ -9,12 +9,14 @@ from flask_login import current_user
 from user import User
 from mockdbhelper import MockDBHelper as DBHelper
 from passwordhelper import PasswordHelper
+from bitlyhelper import BitlyHelper
 
 app = Flask(__name__)
 app.secret_key = 'THIS IS A SECRET KEY!'
 login_manager = LoginManager(app)
 DB = DBHelper()
 PH = PasswordHelper()
+BH = BitlyHelper()
 
 
 @app.route('/')
@@ -85,7 +87,8 @@ def account():
 def account_createtable():
     tablename = request.form.get("tablenumber")
     tableid = DB.add_table(tablename, current_user.get_id())
-    new_url = config.base_url + "newrequest/" + tableid
+    long_url = config.base_url + "newrequest/" + tableid
+    new_url = BH.shorten_url(long_url)
     DB.update_table(tableid, new_url)
 
     return redirect(url_for('account'))
