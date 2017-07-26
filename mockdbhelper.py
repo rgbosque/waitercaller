@@ -1,6 +1,6 @@
 MOCK_USERS = [{'email': 'rgbosque@gmail.com',
                'salt': 'GmjSIKhXXDEQir57k8AY/064Paw=',
-               'hashed': '3c9909afec25354d551dae21590bb26e38d53f2173b8d3dc3eee4c047e7ab1c1eb8b85103e3be7ba613b31bb5c9c36214dc9f14a42fd7a2fdb84856bca5c44c2'
+               'hashed': '75949b47c1210ed87299c235fedf5b96ba92a3c4f46f5d4a176172b1532d5c53ff4d2e275ebdda4b8c2a9837a9fda3ce8ccf83db85f067234dd77e7456479438'
                }]
 
 MOCK_TABLES = [{"_id": "1", "number": "1", "owner": "test@example.com", "url": "mockurl"}]
