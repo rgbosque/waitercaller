@@ -11,7 +11,7 @@ from mockdbhelper import MockDBHelper as DBHelper
 from passwordhelper import PasswordHelper
 from bitlyhelper import BitlyHelper
 
-from forms import RegistrationForm
+from forms import RegistrationForm, LoginForm
 
 app = Flask(__name__)
 app.secret_key = 'THIS IS A SECRET KEY!'  # use for add-on
@@ -23,22 +23,35 @@ BH = BitlyHelper()
 
 @app.route('/')
 def home():
-    registrationform = RegistrationForm()
-    return render_template('home.html', registrationform=registrationform)
+    return render_template("home.html", loginform=LoginForm(), registrationform=RegistrationForm())
 
 
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login', methods=['POST'])
 def login():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    stored_user = DB.get_user(email)
-    if stored_user and PH.validate_password(password,
-                                            stored_user['salt'],
-                                            stored_user['hashed']):
-        user = User(email)
-        login_user(user, remember=True)
-        return redirect(url_for('account'))
-    return home()
+    form = LoginForm(request.form)
+    if form.validate():
+        stored_user = DB.get_user(form.loginemail.data)
+        print stored_user
+        if stored_user and PH.validate_password(form.loginpassword.data,
+                                                stored_user['salt'],
+                                                stored_user['hashed']):
+            user = User(form.loginemail.data)
+            login_user(user, remember=True)
+            return redirect(url_for('account'))
+        form.loginemail.errors.append("Email or password invalid")
+    return render_template("home.html", loginform=form, registrationform=RegistrationForm())
+
+    #
+    # email = request.form.get('email')
+    # password = request.form.get('password')
+    # stored_user = DB.get_user(email)
+    # if stored_user and PH.validate_password(password,
+    #                                         stored_user['salt'],
+    #                                         stored_user['hashed']):
+    #     user = User(email)
+    #     login_user(user, remember=True)
+    #     return redirect(url_for('account'))
+    # return home()
 
 
 @login_manager.user_loader
@@ -60,17 +73,19 @@ def logout():
 @app.route('/register', methods=['POST'])
 def register():
     form = RegistrationForm(request.form)
-    if form.validate():
+    if request.method == "POST" and form.validate():
         if DB.get_user(form.email.data):
             form.email.errors.append("Email address already registered")
-            return render_template('home.html', registrationform=form)
+            return render_template('home.html', loginform=LoginForm(), registrationform=form)
         salt = PH.get_salt()
         hashed = PH.get_hash(form.password2.data + salt)
         DB.add_user(form.email.data, salt, hashed)
-        return render_template("home.html", registrationform=form,
+        return render_template("home.html", loginform=LoginForm(), registrationform=form,
                                onloadmessage="Registration successfull. Please log in.")
+
         # return redirect(url_for("home"))
-    return render_template("home.html", registrationform=form)
+    # return render_template("home.html", registrationform=form)
+    return render_template("home.html", loginform=LoginForm(), registrationform=form)
     # email = request.form.get('email')
     # pw1 = request.form.get('password')
     # pw2 = request.form.get('password2')
