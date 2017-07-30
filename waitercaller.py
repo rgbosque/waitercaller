@@ -11,7 +11,7 @@ from mockdbhelper import MockDBHelper as DBHelper
 from passwordhelper import PasswordHelper
 from bitlyhelper import BitlyHelper
 
-from forms import RegistrationForm, LoginForm
+from forms import RegistrationForm, LoginForm, CreateTableForm, DeleteTableForm
 
 app = Flask(__name__)
 app.secret_key = 'THIS IS A SECRET KEY!'  # use for add-on
@@ -31,7 +31,6 @@ def login():
     form = LoginForm(request.form)
     if form.validate():
         stored_user = DB.get_user(form.loginemail.data)
-        print stored_user
         if stored_user and PH.validate_password(form.loginpassword.data,
                                                 stored_user['salt'],
                                                 stored_user['hashed']):
@@ -109,29 +108,54 @@ def dashboard():
 @login_required
 def account():
     tables = DB.get_table(current_user.get_id())
-    return render_template("account.html", tables=tables)
+    return render_template("account.html",
+                           createtableform=CreateTableForm(),
+                           deletetableform=DeleteTableForm(),
+                           tables=tables)
 
 
 @app.route("/account/createtable", methods=['POST'])
 @login_required
 def account_createtable():
-    tablename = request.form.get("tablenumber")
-    tableid = DB.add_table(tablename, current_user.get_id())
-    long_url = config.base_url + "newrequest/" + tableid
-    new_url = BH.shorten_url(long_url)
-    DB.update_table(tableid, new_url)
+    form = CreateTableForm(request.form)
+    if request.method == "POST" and form.validate():
+        tableid = DB.add_table(form.tablenumber.data, current_user.get_id())
+        new_url = BH.shorten_url(config.base_url + "newrequest/" + tableid)
+        DB.update_table(tableid, new_url)
+        return redirect(url_for('account'))
 
-    return redirect(url_for('account'))
+    return render_template('account.html',
+                           deletetableform=DeleteTableForm(),
+                           createtableform=form,
+                           tables=DB.get_table(current_user.get_id()))
+    # tablename = request.form.get("tablenumber")
+    # tableid = DB.add_table(tablename, current_user.get_id())
+    # long_url = config.base_url + "newrequest/" + tableid
+    # new_url = BH.shorten_url(long_url)
+    # DB.update_table(tableid, new_url)
+    #
+    # return redirect(url_for('account'))
 
 
-@app.route("/account/deletetable")
+@app.route("/account/deletetable", methods=["POST"])
 @login_required
 def account_deletetable():
-    tableid = request.args.get("tableid")
-    print tableid
-    DB.delete_table(tableid)
+    form = DeleteTableForm(request.form)
+    print form.tableid.data
+    if form.validate():
+        DB.delete_table(form.tableid.data)
+        return redirect(url_for('account'))
+        # return render_template('account.html', deletetableform=form,
+        # tables=DB.get_table(current_user.get_id()))
 
-    return redirect(url_for('account'))
+    return render_template('account.html',
+                           createtableform=CreateTableForm(),
+                           deletetableform=form,
+                           tables=DB.get_table(current_user.get_id()))
+    # tableid = request.args.get("tableid")
+    # DB.delete_table(tableid)
+    #
+    # return redirect(url_for('account'))
 
 
 if __name__ == '__main__':
